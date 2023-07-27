@@ -1,0 +1,10 @@
+error on line 10: wrong command
+error on line 10: wrong command
+error on line 11: wrong command
+error on line 11: wrong command
+error on line 12: wrong command
+error on line 12: wrong command
+error on line 13: wrong command
+error on line 13: wrong command
+error on line 14: wrong command
+error on line 14: wrong command
