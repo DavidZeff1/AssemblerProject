@@ -1,90 +1,83 @@
 #include "macroParser.h"
 
-void macroParser(int argc,char **argv){
+void macroParser(int argc, char **argv) {
+    FILE *fp, *fd;
+    char str[maxLineLength] = {0};
+    char c;
+    int strLen = 0, countLine = 0;
+    int macroParsingState = 0; // 0 = not parsing, 1 = parsing macro name, 2 = parsing macro contents
+    macronode *head = NULL;
+    macronode *temp = NULL;
 
-	FILE *fp,*fd;	/*to read from the initial input and write into a new filewith the macros parsed out*/
-	char str[maxLineLength] = {0};/*this will hold every string from the txt file with (',' )(' ') ('\n') used as separators*/
-	char c;/*hold every char from the txt file*/
-	int i;/*used for 'for' loops*/
-	macronode *head = NULL;
-	macronode *temp= NULL;
-	int foundMacro = 0;/*flag*/
-	int strLen = 0;
-	int countLine = 0;
-	fp = fopen("unParsedProg","r+");
-	fd = fopen("Prog.as","w+");
-	
-	
-	while(!feof(fp)){
-		c = fgetc(fp);
-		countLine++;
-		SKIP_COMMENT/*see macroParser.h for info*/
-		CLOSE_EMPTYLINE
-		if (c != ' ' && c != ',' && c != '\n') {	/* check that char is not a seperator*/
-   			 str[strLen++] = c;	
-		}else if (strLen > 0) {	/*if seperator and we have a word in str than check it to see if its a macro*/
-				
-				if(!strcmp("mcro",str)){/*if macro turn on flag*/
-					foundMacro++;
-					RESET_STRING 
-					continue;
-				}
-				
-				if(foundMacro == 1){/* second word after macro is its name so set macro array index name to macro name*/
-					head = addNode(head,str,"name");
-					RESET_STRING 
-					foundMacro++;
-					continue;
-				}
-				if(!strcmp("endmcro",str)){	/*reached end of macro, reset string and continue parse*/
-					foundMacro=0;
-					RESET_STRING 
-					continue;
-				}
-				if(foundMacro>1){		/*when saving the string of macro we must add the seperator char to insure proper fprinting*/
-					str[strLen++] = c;
-					str[strLen] = '\0';
-					head = addNode(head,str,"contents");
-					RESET_STRING 
-					continue;
-				}
-				
-				temp = findNode(head,str);/*check every word if its a macro name, if it is then parse its contents to file*/
-				if(temp){
-						
-						fprintf(fd,"%s",temp->contents);
-						RESET_STRING
-						temp = NULL;
-						continue;
-				}
-				
-						/*if not a macro fprint*/
-				
-				fprintf(fd,"%s%c",str,c);
-				
-				RESET_STRING 
-    			}else{
-				
-				fprintf(fd,"%c",c);
-			}
-			
-			
+    fp = fopen("unParsedProg", "r");
+    fd = fopen("Prog.as", "w");
 
-		
-		
-		
-		}
-		
-/*-----------------------------------------------------------------------------------------------------------------------------------------------------------------*/
-        freeList(head);
-	fclose(fp);
-	fclose(fd);
+    if (!fp || !fd) {
+        fprintf(stderr, "Error opening files.\n");
+        if (fp) fclose(fp);
+        if (fd) fclose(fd);
+        return;
+    }
 
+    while ((c = fgetc(fp)) != EOF) {
+        countLine++;
 
+        // Skip comments and handle empty lines (define SKIP_COMMENT and CLOSE_EMPTYLINE)
+        SKIP_COMMENT
+        CLOSE_EMPTYLINE
 
-	
-		
+        if (c != ' ' && c != ',' && c != '\n') {
+            str[strLen++] = c;
+        } else if (strLen > 0) {
+            str[strLen] = '\0';
+
+            if (strcmp(str, "mcro") == 0) {
+                macroParsingState = 1; // Start parsing macro
+                RESET_STRING
+                continue;
+            }
+
+            if (macroParsingState == 1) {
+                head = addNode(head, str, "name");
+                macroParsingState = 2; // Ready to parse macro contents
+                RESET_STRING
+                continue;
+            }
+
+            if (strcmp(str, "endmcro") == 0) {
+                macroParsingState = 0; // End macro parsing
+                RESET_STRING
+                continue;
+            }
+
+            if (macroParsingState == 2) {
+                str[strLen++] = c;
+                str[strLen] = '\0';
+                head = addNode(head, str, "contents");
+                RESET_STRING
+                continue;
+            }
+
+            temp = findNode(head, str);
+            if (temp) {
+                fprintf(fd, "%s", temp->contents);
+                RESET_STRING
+                temp = NULL;
+                continue;
+            }
+
+            fprintf(fd, "%s%c", str, c);
+            RESET_STRING
+        } else {
+            fprintf(fd, "%c", c);
+        }
+    }
+
+    freeList(head);
+    fclose(fp);
+    fclose(fd);
 }
+
 
 
 
